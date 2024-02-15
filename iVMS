@@ -1,0 +1,24 @@
+// let
+//     Source = IVMS_ALL,
+//     Custom3 = Table.ReplaceValue(Source,"-",0,Replacer.ReplaceValue,{"Sign in","Sign out"}),
+//     // Table.PromoteHeaders(Excel.Workbook(File.Contents("C:\Users\dmakosi\Documents\BRANCH REPORTS\DOWNLOADS\DERICK\TIME1.xlsx"), null, true)[Data]{0}),
+//     #"Removed Other Columns" = Table.SelectColumns(Custom3,{"Name", "Date", "Sign in", "Sign out"}),
+//     Custom1 = #"Removed Other Columns",
+//     Custom2 = Custom1
+// in
+//     Custom2
+
+let
+    Source = Table.TransformColumns((Folder.Files(IVMS)),{"Content", each (Excel.Workbook(_))}),
+    Custom2 = Source,
+    Custom1 = Table.ExpandTableColumn(Custom2,"Content",{"Data"}),
+    #"Added Custom" = Table.AddColumn(Custom1, "Skipped", each Table.PromoteHeaders(Table.Skip([Data], each not List.ContainsAny(Record.ToList(_),{"Index"})))),
+    Custom4 = Table.AddColumn(#"Added Custom","removed", each Table.RemoveLastN([Skipped],2)),
+    Custom3 = Table.Combine(Custom4[removed]),
+    #"Renamed Columns" = Table.RenameColumns(Custom3,{{"Check-in", "Sign in"}, {"Check-out", "Sign out"}}),
+    RenamedTime = Table.ReplaceValue(#"Renamed Columns","-",0,Replacer.ReplaceValue,{"Sign in","Sign out"}),
+    DateValue = Table.TransformColumnTypes(RenamedTime,{{"Date", type date},{"Sign in", type time},{"Sign out", type time}}),
+    // Table.PromoteHeaders(Excel.Workbook(File.Contents("C:\Users\dmakosi\Documents\BRANCH REPORTS\DOWNLOADS\DERICK\TIME1.xlsx"), null, true)[Data]{0}),
+    Custom6 = Table.SelectColumns(DateValue,{"Name", "Date", "Sign in", "Sign out"})
+in
+    Custom6
